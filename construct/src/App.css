@@ -1,4 +1,5 @@
 body {
+  /*background: #120f1a;*/
   background: #0f1a19;
 }
 
@@ -20,21 +21,6 @@ body {
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-}
-
-.start {
-	background: #61ffd7;
-	transition: background 1s;
-}
-
-.conv {
-	background: #9b7ef7;
-	transition: background 1s;
-}
-
-.pool {
-	background: #4fb5ff;
-	transition: background 1s;
 }
 
 .layer {
@@ -67,6 +53,18 @@ img {
   text-align: center;
 }
 
+
+.addmenu {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+/*  flex-wrap: nowrap;*/
+}
+
 .add {
   width: 1.5em;
   height: 1.5em;
@@ -76,6 +74,7 @@ img {
   border-radius: 3em;
   flex: 0 0 auto;
   text-align: center;
+  float: left;
   transition: width 0.3s;
   transition: height 0.3s;
 }
@@ -84,21 +83,31 @@ img {
   width: 60%;
   height: 60%;
   margin: auto;
-  /*vertical-align: top;*/
   float: none;
   display: inline;
   clear: none;
 }
 
-.MuiPaper {
-  background: red !important;
-  padding: 0em !important;
-  margin: 0em !important;
+.menu {
+  width: 10em;
 }
 
-.MuiMenuItem {
-  color: white !important;
-  background-color: black !important;
-  margin-top: 0.2em !important;
-  margin-bottom: 0.2em !important;
+.menuitem:hover {
+	opacity: 0.8;
+}
+
+.menuitem:not(:hover) {
+  color: rgba(255, 255, 255, 0.5) !important;
+  background: rgba(100, 100, 100, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0) !important;
+}
+
+.menuitem {
+  border: 1px solid #ff1717;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0.5em;
+  margin: 0.3em;
+  border-radius: 1.5em;
+  opacity: 0.5;
 }
