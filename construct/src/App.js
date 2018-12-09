@@ -1,16 +1,49 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
+import React from 'react';
 import './App.css';
+import * as NumericInput from "react-numeric-input";
+import * as Scroll from 'react-scroll';
 
+const menuOptions = ["conv", "pool", "dense"]
 const ico = require('./img/add-icon.svg');
+// var target = document.getElementById("menu");
 
-const colors = {"start": "#61ffd7", "conv": "#8663f7", "pool": "#4fb5ff", "dense": "#ff644d"};
-const menuOptions = ["Convolution Layer", "Pooling Layer", "Dense Layer"]
-const menuKey = {"Convolution Layer": "conv", "Pooling Layer": "pool", "Dense Layer": "dense"}
+const formatting = {
+  "start": { 
+    color: "#4fcebd",
+    gradient: {l: "#61ffbe", r: "#3ea0bd"},
+    shortname: "start",
+    fullname: "Input Layer",
+    icon: "./img/start-icon.svg",
+    parameters: {size: null}
+  },
+  "conv": { 
+    color: "#b266d5",
+    gradient: {l: "#d585be", r: "#9149eb"},
+    shortname: "conv",
+    fullname: "Convolution Layer",
+    icon: "./img/conv-icon.svg",
+    parameters: {filters: 4, size: 3, stride: 1}
+  },
+  "pool": { 
+    color: "#2db8d4",
+    gradient: {l: "#1aeceb", r: "#4085be"},
+    shortname: "pool",
+    fullname: "Pooling Layer",
+    icon: "./img/pool-icon.svg",
+    parameters: {size: 2, stride: 2, type: "max"}
+  },
+  "dense": { 
+    color: "#f98829",
+    gradient: {l: "#feae1f", r: "#f56333"},
+    shortname: "dense",
+    fullname: "Dense Layer",
+    icon: "./img/dense-icon.svg",
+    parameters: {neurons: null}
+  }
+};
 
-function colorize(color){
-    return({background: color});
-}
+var scroller = Scroll.animateScroll;
+
 
 function tintColor(color, percent) {   
     var f=parseInt(color.slice(1),16),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=f>>16,G=f>>8&0x00FF,B=f&0x0000FF;
@@ -21,7 +54,7 @@ function hexToRgbA(hex, alpha){
     var c;
     if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
         c= hex.substring(1).split('');
-        if(c.length== 3){
+        if(c.length=== 3){
             c= [c[0], c[0], c[1], c[1], c[2], c[2]];
         }
         c= '0x'+c.join('');
@@ -30,44 +63,98 @@ function hexToRgbA(hex, alpha){
     throw new Error('Bad Hex');
 }
 
+function getGradient(color, direction){
+  return({
+    background: 'linear-gradient(to ' + direction + ',' + hexToRgbA(color, 0.2) + ' 0%,' + hexToRgbA(color, 0.1) + ' 100%)',
+    'border-color': color,
+    color: tintColor(color, 0.5)
+  });
+}
+
+function getGradient2(color1, color2, direction){
+    return({
+    background: 'linear-gradient(to ' + direction + ',' + color1 + ' 0%,' + color2 + ' 100%)',
+  });
+}
+
+
+
+class Animation extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {animate: true, angle: 0 , l:this.props.l, r:this.props.r};
+    this.updateAnimationState = this.updateAnimationState.bind(this);
+  }
+  
+  componentDidMount() {
+    this.rAF = requestAnimationFrame(this.updateAnimationState);
+  }
+  
+  componentWillUnmount() {
+    cancelAnimationFrame(this.rAF);
+  }
+  
+  updateAnimationState() {
+    if(this.state.animate){
+      this.setState(prevState => ({ angle: prevState.angle + 1 }));
+      this.rAF = requestAnimationFrame(this.updateAnimationState);
+      if(this.state.angle > 120){
+        this.setState({animate: false});
+      }
+    }
+  }
+  
+  render() {
+    return <Connector angle={this.state.angle} l={this.state.l} r={this.state.r} />
+  }
+}
+
+
 
 class Connector extends React.Component {
   constructor(props){
     super(props);
     this.state = {l: this.props.l, r: this.props.r};
-
+    this.canvasRef = React.createRef();
   }
 
-  componentDidMount() {
-    this.updateCanvas();
-  }
+  componentDidUpdate() {
+    const {angle} = this.props;
+    const canvas = this.canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.save();
 
-  updateCanvas() {
-    const width = this.refs.canvas.width;
-    const height = this.refs.canvas.height;
-    const ctx = this.refs.canvas.getContext('2d');
     var gradient=ctx.createLinearGradient(0,0,width,0);
-    gradient.addColorStop("0",colors[this.state.l]);
-    gradient.addColorStop("1.0",colors[this.state.r]);
+    gradient.addColorStop("0",formatting[this.state.l].color);
+    gradient.addColorStop("1",formatting[this.state.r].color);
+    ctx.clearRect(0, 0, width, height);
+    var x;
+    var y;
 
     ctx.beginPath();
     ctx.moveTo(0, height/2);
-    ctx.lineTo(width, height/2);
+    // ctx.lineTo(width, height/2+angle);
 
+    for(x=0; x<=width; x+=5){
+        y = Math.sin((x+angle*30)*Math.PI/180)*40/angle + height/2;
+        ctx.lineTo(x,y);
+    }
 
     ctx.setLineDash([25, 30]);
     ctx.strokeStyle=gradient;
-
     ctx.lineCap = 'round';      
     ctx.lineWidth=10;
     ctx.stroke()
     // ctx.strokeStyle = '#ff0000';
     // ctx.stroke();
+    ctx.restore();
   }
 
   render() {
     return (
-        <canvas class="connector" ref="canvas"/>
+        <canvas class="connector" ref={this.canvasRef}/>
     );
   }
 }
@@ -77,27 +164,79 @@ class Layer extends React.Component {
   constructor(props){
     super(props);
     this.state = {
-      type: this.props.type,
-      filters: this.props.filteres,
-      size: this.props.size,
-      stride: this.props.stride
+      name: this.props.type,
+      parameters: formatting[this.props.type].parameters,
+      selected: true
     };
+    this.input = React.createRef();
+    this.handleChange = this.handleChange.bind(this);
   }
 
-  clicked(){
-    alert("Clicked");
+  handleChange(parameter, event) {
+  	this.state.parameters[parameter] = event.target.value;
+  }
+
+  getComboA(selectObject){
+  	console.log(selectObject);
+
+  }
+
+
+  toggleEditMenu(state){
+    if(state != null){
+      this.setState({selected: state});
+    } else{
+      this.setState({selected: !this.state.selected});
+    }
+  }
+
+  getOptions(){
+    const options = [];
+    const keys = Object.keys(this.state.parameters);
+    for (var i = 0; i < keys.length; i++) {
+    	const parameter = keys[i];
+      options.push(<li>{parameter}: <input onChange={(event) => this.handleChange(parameter, event)} defaultValue={this.state.parameters[parameter]}></input>
+</li>);
+    }
+
+    return(
+		<ul>
+			{options}
+		</ul>
+    );
+  }
+
+  editMenu(){
+    if(this.state.selected){
+      return(
+        <div>
+          <div class="menuconnector">
+            <div class="menuconnectorline" style={{'border-bottom-color': formatting[this.state.name].color}}></div>
+          </div>
+          <div class="editmenu" style={getGradient2(formatting[this.state.name].color, tintColor(formatting[this.state.name].color, -0.2), 'bottom')}>
+            <h1>{formatting[this.state.name].fullname}</h1>
+            {this.getOptions()}
+          </div>
+        </div>
+      );
+    }
   }
 
   render(){
-    const ico = require('./img/' + this.state.type + '-icon.svg');
+     // const ico = require(formatting[this.state.name].icon); // not sure why this doesn't work
+    const ico = require('./img/' + this.state.name + '-icon.svg');
 
     return(
-      <div class="layer" style={colorize(colors[this.state.type])} onClick={() => this.clicked()}>
-        <img src={ico} alt=""/>
+      <div class="layermenu" onMouseEnter={() => this.toggleEditMenu(true)} onMouseLeave={() => this.toggleEditMenu(false)}>
+        <div class="layer" style={getGradient2(formatting[this.state.name].gradient.l, formatting[this.state.name].gradient.r, "bottom")} onClick={() => this.toggleEditMenu()}>
+          <img src={ico} alt=""/>
+        </div>
+        {this.editMenu()}
       </div>
     );
   }
 }
+
 
 
 class Add extends React.Component {
@@ -109,36 +248,45 @@ class Add extends React.Component {
 
   setMenuVisibility(visible) {
     this.setState({menuVisible: visible});
+    if(visible){
+          // alert("Showing");
+          // target.parentNode.scrollTop = target.offsetTop;
+    //     scroller.scrollTo('menu',{
+    //   duration: 50,
+    //   smooth: true,
+    //   containerId: 'container',
+    // });
+    }
   }
 
   menuVisibility() {
     if(this.state.menuVisible){
-      return({display: 'inline'});
+      return({visibility: "visible"});
     } else {
-      return({display: 'none'});
+      return({visibility: "hidden"});
     }
   }
 
-  getGradient(color){
-    return({
-      background: 'linear-gradient(to right,' + hexToRgbA(color, 0.2) + ' 0%,' + hexToRgbA(color, 0.1) + ' 100%)',
-      border: '1px solid' + color,
-      color: tintColor(color, 0.5)
-    });
+  menuHeight() {
+    if(this.state.menuVisible){
+      return({height: '100%'});
+    } else {
+      return({height: '0%'});
+    }
   }
 
   drawMenuItems() {
     var menuItems = [];
 
     for (var i = 0; i < this.state.menuItems.length; i++) {
-      const key = menuKey[this.state.menuItems[i]].slice();
+      const key = this.state.menuItems[i].slice();
       menuItems.push(
-        <div class="menuitem" style={this.getGradient(colors[key])} onClick={() => this.state.onClick(key)}>{this.state.menuItems[i]}</div>
+        <div class="menuitem" style={getGradient(formatting[key].color, 'right')} onClick={() => this.state.onClick(key)}>{formatting[key].fullname}</div>
       );
     }
 
     return(
-      <div class="menu" style={this.menuVisibility()}>
+      <div class="menu" id="menu" style={this.menuVisibility()}>
         {menuItems}
       </div>
     );
@@ -146,8 +294,8 @@ class Add extends React.Component {
 
   render() {
     return(
-      <div class="addmenu" onMouseEnter={() => this.setMenuVisibility(true)} onMouseLeave = {() => this.setMenuVisibility(false)}>
-        <div class="add" style={colorize(colors[this.state.color])}><img src={ico}/></div>
+      <div class="addmenu" style={this.menuHeight()} onMouseEnter={() => this.setMenuVisibility(true)} onMouseLeave = {() => this.setMenuVisibility(false)}>
+        <div class="add" style={getGradient2(formatting[this.state.color].gradient.l, formatting[this.state.color].gradient.r, "bottom")} onClick={() => this.setMenuVisibility(true)}><img alt="" src={ico}/></div>
         {this.drawMenuItems()}
       </div>
     );
@@ -172,7 +320,8 @@ class Container extends React.Component {
     const out = this.state.items.slice();
 
     for (var i = 1; i < this.state.items.length; i++) {
-      out.splice((i*2-1), 0, <Connector l={this.state.items[i-1].props.type} r={this.state.items[i].props.type}/>);
+      // out.splice((i*2-1), 0, <Connector l={this.state.items[i-1].props.type} r={this.state.items[i].props.type}/>);
+      out.splice((i*2-1), 0, <Animation l={this.state.items[i-1].props.type} r={this.state.items[i].props.type}/>);
     }
 
     out.push(<Add menuItems={menuOptions} color={this.state.items[this.state.items.length-1].props.type} onClick={this.addLayer}/>);
@@ -181,7 +330,7 @@ class Container extends React.Component {
 
   render(){
     return(
-      <div class="container">
+      <div class="container" id="container">
         {this.drawItems()}
       </div>
     );
