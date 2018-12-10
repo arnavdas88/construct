@@ -3,8 +3,11 @@ import './App.css';
 import * as NumericInput from "react-numeric-input";
 import * as Scroll from 'react-scroll';
 
-const menuOptions = ["conv", "pool", "dense"]
+const menuOptions = ["conv", "pool", "recurrent", "noise", "dense"]
 const ico = require('./img/add-icon.svg');
+const up = require('./img/arrow-up.svg');
+const down = require('./img/arrow-down.svg');
+
 // var target = document.getElementById("menu");
 
 const formatting = {
@@ -14,7 +17,10 @@ const formatting = {
     shortname: "start",
     fullname: "Input Layer",
     icon: "./img/start-icon.svg",
-    parameters: {size: null}
+    parameters: {"input shape": 10},
+    parameterOptions: [
+    {title: "input shape", type:"diminput", min:1, max:999},
+    ]
   },
   "conv": { 
     color: "#b266d5",
@@ -22,15 +28,30 @@ const formatting = {
     shortname: "conv",
     fullname: "Convolution Layer",
     icon: "./img/conv-icon.svg",
-    parameters: {filters: 4, size: 3, stride: 1}
+    parameters: {dimension: "2D", filters: 10, size: 3, stride: 1, padding: "Same", "activation": "ReLU"},
+    parameterOptions: [
+    {title: "dimension", type:"dropdown", options:["2D", "1D"]},
+    {title: "filters", type:"number", min:1, max:999},
+	{title: "size", type:"number", min:1, max:999},
+    {title: "stride", type:"number", min:1, max:999},
+    {title: "padding", type:"dropdown", options:["Same", "Valid", "Causal"]},
+    {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"]}
+    ]
+
   },
   "pool": { 
-    color: "#2db8d4",
-    gradient: {l: "#1aeceb", r: "#4085be"},
+    color: "#4a9fe9",
+    gradient: {l: "#4fceff", r: "#4671d3"},
     shortname: "pool",
     fullname: "Pooling Layer",
     icon: "./img/pool-icon.svg",
-    parameters: {size: 2, stride: 2, type: "max"}
+    parameters: {size: 2, stride: 2, type: "Max", padding: "Same"},
+    parameterOptions: [
+    {title: "size", type:"number", min:1, max:999},
+	{title: "stride", type:"number", min:1, max:999},
+    {title: "type", type:"dropdown", options:["Max Pooling", "Avg Pooling"]},
+    {title: "padding", type:"dropdown", options:["Same", "Zeros"]}
+    ]
   },
   "dense": { 
     color: "#f98829",
@@ -38,7 +59,35 @@ const formatting = {
     shortname: "dense",
     fullname: "Dense Layer",
     icon: "./img/dense-icon.svg",
-    parameters: {neurons: null}
+    parameters: {"neuron count": 10, activation: "ReLU"},
+    parameterOptions: [
+    {title: "neuron count", type:"number", min:1, max:999},
+    {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"]}
+    ]
+  },
+   "recurrent": { 
+    color: "#ff6ac3",
+    gradient: {l: "#ff94d8", r: "#ff3ead"},
+    shortname: "recurrent",
+    fullname: "Recurrent Layer",
+    icon: "./img/recurrent-icon.svg",
+    parameters: {count: 10, activation: "ReLU"},
+    parameterOptions: [
+    {title: "count", type:"number", min:1, max:999},
+    {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"]}
+    ]
+  },
+  "noise": { 
+    color: "#787878",
+    gradient: {l: "#a1a1a1", r: "#4f4f4f"},
+    shortname: "noise",
+    fullname: "Noise Layer",
+    icon: "./img/noise-icon.svg",
+    parameters: {count: 10, activation: "ReLU"},
+    parameterOptions: [
+    {title: "count", type:"number", min:1, max:999},
+    {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"]}
+    ]
   }
 };
 
@@ -159,28 +208,98 @@ class Connector extends React.Component {
   }
 }
 
+class DimensionInput extends React.Component{
+	constructor(props){
+		super(props);
+		this.state = {
+			dim: this.props.dim,
+			values: new Array(this.props.dim).fill(1)
+		};
+
+	}
+
+	getButtons(minus){
+		return(<div class="buttoncontainer"><button><img src={up}/></button><button><img src={down}/></button></div>);
+	}
+
+	render(){
+		const output = [];
+		output.push(<input class="diminputbox" type="number" defaultValue={this.state.values[0]}></input>);
+		const buttons = [];
+
+		for (var i = 1; i < this.state.values.length; i++) {
+			output.push(' x ');
+			output.push(<input class="diminputbox" type="number" defaultValue={this.state.values[i]}></input>);
+		}
+
+		output.push(this.getButtons(true));
+		return(<div class="dimensioninput">{output}</div>);
+
+	}
+}
 
 class Layer extends React.Component {
   constructor(props){
     super(props);
     this.state = {
       name: this.props.type,
-      parameters: formatting[this.props.type].parameters,
+      parameters: Object.assign({}, formatting[this.props.type].parameters),
       selected: true
     };
     this.input = React.createRef();
-    this.handleChange = this.handleChange.bind(this);
-  }
+    this.toggleEditMenu = this.toggleEditMenu.bind(this);
+  	}
+
+   inputField(parameterOptions){
+	const output = [];
+
+	if(parameterOptions.type == "dropdown"){
+		var options = [];
+
+
+		for (var i = 0; i < parameterOptions.options.length; i++) {
+			options.push(<option value={parameterOptions.options[i]}>{parameterOptions.options[i]}</option>);
+		}
+
+		return(
+			<li>
+			{parameterOptions.title}:&nbsp;
+			<select name="type" defaultValue={this.state.parameters[parameterOptions.title]} onChange={(event) => this.handleChange(parameterOptions.title, event)}>
+				{options}
+			</select>
+			</li>
+		);
+	}
+
+	if(parameterOptions.type == "diminput"){
+		return(
+			<li>{parameterOptions.title}:&nbsp;
+				<DimensionInput dim={2}/>
+			</li>
+		);
+	}
+
+	return(
+	  <li>{parameterOptions.title}:&nbsp;
+	  <input onFocus={this.handleFocus} type="number" onKeyPress={this.handleKeyPress} onChange={(event) => this.handleChange(parameterOptions.title, event)} defaultValue={this.state.parameters[parameterOptions.title]}></input></li>
+	);
+	}
 
   handleChange(parameter, event) {
-  	this.state.parameters[parameter] = event.target.value;
+  	const updatedState = Object.assign({}, this.state);
+  	updatedState["parameters"][parameter] = event.target.value;
+  	this.setState(updatedState);
   }
 
-  getComboA(selectObject){
-  	console.log(selectObject);
+	handleKeyPress(event) {
+	  if (event.key === 'Enter') {
+		event.target.blur(false);
+	  }
+	}
 
-  }
-
+	handleFocus(event) {
+	  event.target.select();
+	}
 
   toggleEditMenu(state){
     if(state != null){
@@ -191,16 +310,19 @@ class Layer extends React.Component {
   }
 
   getOptions(){
+    if(this.state.parameters == null){
+    	return(null);
+    }
     const options = [];
     const keys = Object.keys(this.state.parameters);
     for (var i = 0; i < keys.length; i++) {
-    	const parameter = keys[i];
-      options.push(<li>{parameter}: <input onChange={(event) => this.handleChange(parameter, event)} defaultValue={this.state.parameters[parameter]}></input>
-</li>);
+    	const parameter = keys[i];  	
+    	options.push(this.inputField(formatting[this.state.name].parameterOptions[i]));
     }
 
     return(
 		<ul>
+            <hr/>
 			{options}
 		</ul>
     );
@@ -225,9 +347,9 @@ class Layer extends React.Component {
   render(){
      // const ico = require(formatting[this.state.name].icon); // not sure why this doesn't work
     const ico = require('./img/' + this.state.name + '-icon.svg');
-
+	// <div class="layermenu" onMouseEnter={() => this.toggleEditMenu(true)} onMouseLeave={() => this.toggleEditMenu(false)}>
     return(
-      <div class="layermenu" onMouseEnter={() => this.toggleEditMenu(true)} onMouseLeave={() => this.toggleEditMenu(false)}>
+      <div class="layermenu">
         <div class="layer" style={getGradient2(formatting[this.state.name].gradient.l, formatting[this.state.name].gradient.r, "bottom")} onClick={() => this.toggleEditMenu()}>
           <img src={ico} alt=""/>
         </div>
@@ -249,13 +371,7 @@ class Add extends React.Component {
   setMenuVisibility(visible) {
     this.setState({menuVisible: visible});
     if(visible){
-          // alert("Showing");
-          // target.parentNode.scrollTop = target.offsetTop;
-    //     scroller.scrollTo('menu',{
-    //   duration: 50,
-    //   smooth: true,
-    //   containerId: 'container',
-    // });
+    	//scroll to right
     }
   }
 
@@ -280,8 +396,9 @@ class Add extends React.Component {
 
     for (var i = 0; i < this.state.menuItems.length; i++) {
       const key = this.state.menuItems[i].slice();
+      const ico = require('./img/' + key + '-icon.svg');
       menuItems.push(
-        <div class="menuitem" style={getGradient(formatting[key].color, 'right')} onClick={() => this.state.onClick(key)}>{formatting[key].fullname}</div>
+        <div class="menuitem" style={getGradient(formatting[key].color, 'right')} onClick={() => this.state.onClick(key)}><img src={ico}/>{formatting[key].fullname}</div>
       );
     }
 
@@ -303,6 +420,7 @@ class Add extends React.Component {
 }
 
 
+
 class Container extends React.Component {
   constructor(props){
     super(props);
@@ -320,7 +438,6 @@ class Container extends React.Component {
     const out = this.state.items.slice();
 
     for (var i = 1; i < this.state.items.length; i++) {
-      // out.splice((i*2-1), 0, <Connector l={this.state.items[i-1].props.type} r={this.state.items[i].props.type}/>);
       out.splice((i*2-1), 0, <Animation l={this.state.items[i-1].props.type} r={this.state.items[i].props.type}/>);
     }
 

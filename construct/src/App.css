@@ -12,7 +12,7 @@ background: #525658;
 .container {
   background: linear-gradient(to bottom, #2b3033 0%, #525658 100%); 
   color: white;
-  height: 14em;
+  height: 25em;
   position: relative;
   padding-top: 2em !important;
   padding: 1em;
@@ -96,7 +96,7 @@ img {
 }
 
 .menu {
-  width: 10em;
+  /*width: 10em;*/
   position: relative;
   height: 1em;
 }
@@ -117,8 +117,23 @@ img {
   color: rgba(255, 255, 255, 0.5);
   padding: 0.5em;
   margin: 0.3em;
+  display: flex;
   border-radius: 1.5em;
   opacity: 0.5;
+  text-align: left;
+  white-space: nowrap
+}
+
+.menuitem img {
+	width: 1em;
+	height: 1em;
+	margin: 0em;
+	margin-right: 0.3em;
+	padding: 0em;
+}
+
+.menuicon {
+	fill: red !important;
 }
 
 .layermenu {
@@ -144,24 +159,28 @@ img {
 }
 
 .editmenu {
-	margin-top: 0em;
+	margin: 0em;
 	padding: 0.3em;
-	/*border: 2px solid #fff;*/
-	width: 10em !important;
+	padding-top: 0.5em;
+	padding-bottom: 0.5em;
 	overflow: visible;
 	border-radius: 0.5em;
 	position: relative;
 	z-index: 10;
+	display: inline-block;
 }
 
 .editmenu h1 {
 	margin: 0em;
-	padding: 0.5em;
+	padding: 0.3em;
 	font-size: 1em;
 	text-align: left;
+	white-space: nowrap
 }
 
 .editmenu ul {
+  margin-top: 0em;
+  margin-bottom: 0.3em;
   text-align: left;
   list-style-type: none;
   padding-right: 0.3em;
@@ -170,8 +189,23 @@ img {
 
 .editmenu li {
 	color: white;
-	padding-bottom: 0.3em;
+	text-align: left;
+	white-space: nowrap !important;
+}
+
+.editmenu select {
+	background: rgba(0,0,0,0.2);
+	border: none !important;
+	border-radius: 1.5em !important;
+	color: white !important;
+	font-weight: bold !important;
+	font-size: 0.8em !important;
 	text-align: center;
+	text-align-last: center;
+}
+
+.editmenu hr {
+	border: 0.04em solid rgba(0, 0, 0, 0.1);
 }
 
 .layer img:hover {
@@ -185,7 +219,6 @@ img {
   margin: auto; /*horizontally center*/
   transition: all 0.1s ease-in;
 }
-
 
 
 .FlaggingPeriodTextBox input[type="number"]::-webkit-outer-spin-button, 
@@ -207,7 +240,7 @@ opacity: 1 !important;
 	/*position: relative !important;*/
 	background: rgba(0,0,0,0.2);
 	/*padding: 0.1em;*/
-	/*width: 3.5em;*/
+	width: 3.5em;
 	border: none !important;
 	border-radius: 1.5em !important;
 	color: white !important;
@@ -217,9 +250,7 @@ opacity: 1 !important;
 }
 
 input {
-	/*position: relative !important;*/
 	background: rgba(0,0,0,0.2);
-	/*padding: 0.1em;*/
 	width: 3.5em;
 	border: none !important;
 	border-radius: 1.5em !important;
@@ -231,4 +262,49 @@ input {
 
 input[type=number]::-webkit-inner-spin-button {
   -webkit-appearance: none;
+}
+
+.diminputbox {
+	width: 2em;
+	height: 1.5em;
+}
+
+.dimensioninput {
+	overflow-x: scroll;
+	white-space: nowrap;
+	display: inline-block;
+	vertical-align: middle !important;
+}
+
+.editmenu button {
+	position: relative;
+	padding: 0em !important;
+	padding-left: 0.3em !important;
+	padding-right: 0.3em !important;
+	/*width: 1.3em;*/
+	color: white;
+	border-radius: 1.5em;
+	background: none;
+	border: none;
+	font-weight: bold;
+	font-size: 1em !important;
+	display: flex;
+	text-align: center !important;
+}
+
+.buttoncontainer {
+	display: inline-block;
+	/*white-space: nowrap;*/
+	margin-left: 0.2em;
+	border-radius: 1.5em;
+	/*background: rgba(0,0,0,0.1);*/
+	vertical-align: middle !important;
+	text-align: center !important;
+}
+
+.editmenu img {
+	width: 0.5em;
+	height: 0.5em;
+	padding: 0.1em !important;
+	margin: 0em !important;
 }
