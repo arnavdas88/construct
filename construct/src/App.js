@@ -17,7 +17,7 @@ const formatting = {
     shortname: "start",
     fullname: "Input Layer",
     icon: "./img/start-icon.svg",
-    parameters: {"input shape": 10},
+    parameters: {"input shape": {dim: 2, values:[25,25]}},
     parameterOptions: [
     {title: "input shape", type:"diminput", min:1, max:999},
     ]
@@ -213,26 +213,66 @@ class DimensionInput extends React.Component{
 		super(props);
 		this.state = {
 			dim: this.props.dim,
-			values: new Array(this.props.dim).fill(1)
+			values: this.props.values,
 		};
-
 	}
 
+
+	handleKeyPress(event) {
+	  if (event.key === 'Enter') {
+		event.target.blur(false);
+	  }
+	}
+
+	handleFocus(event) {
+	  event.target.select();
+	}
+
+
+	updateDim(add){
+		var dim = this.state.dim;
+		var values = this.state.values.slice();
+
+		if(add){
+			dim = this.state.dim + 1;
+			values.push(1);
+		}else{
+			dim = this.state.dim -1;
+			values.pop(1);
+		}
+		
+		this.setState({dim: dim, values: values});
+		this.props.updateFunction(dim, values);
+	}
+
+	  handleChange(event, index) {
+	  	const updatedState = Object.assign({}, this.state);
+	  	updatedState.values[index] = event.target.value;
+	  	this.setState(updatedState); // update self
+		this.props.updateFunction(this.state.dim, this.state.values); //update parent
+  	}
+
 	getButtons(minus){
-		return(<div class="buttoncontainer"><button><img src={up}/></button><button><img src={down}/></button></div>);
+		const buttons = [];
+		buttons.push(<button onClick={()=>this.updateDim(true)}><img src={up}/></button>);
+		if(this.state.values.length > 1){
+			buttons.push(<button onClick={()=>this.updateDim(false)}><img src={down}/></button>);
+		}
+		return(<div class="buttoncontainer">{buttons}</div>);
 	}
 
 	render(){
 		const output = [];
-		output.push(<input class="diminputbox" type="number" defaultValue={this.state.values[0]}></input>);
+		output.push(this.getButtons(false));
+		output.push(<input onFocus={this.handleFocus} onKeyPress={this.handleKeyPress} class="diminputbox" onChange={(event)=>this.handleChange(event, 0)} type="number" defaultValue={this.state.values[0]}></input>);
 		const buttons = [];
 
 		for (var i = 1; i < this.state.values.length; i++) {
+			const index = i;
 			output.push(' x ');
-			output.push(<input class="diminputbox" type="number" defaultValue={this.state.values[i]}></input>);
+			output.push(<input onFocus={this.handleFocus} onKeyPress={this.handleKeyPress} class="diminputbox" onChange={(event)=>this.handleChange(event, index)} type="number" defaultValue={this.state.values[i]}></input>);
 		}
 
-		output.push(this.getButtons(true));
 		return(<div class="dimensioninput">{output}</div>);
 
 	}
@@ -244,10 +284,18 @@ class Layer extends React.Component {
     this.state = {
       name: this.props.type,
       parameters: Object.assign({}, formatting[this.props.type].parameters),
-      selected: true
+      selected: false,
     };
     this.input = React.createRef();
     this.toggleEditMenu = this.toggleEditMenu.bind(this);
+    this.onUpdate = this.onUpdate.bind(this);
+  	}
+
+  	onUpdate(dim, values){
+  		const updatedState = Object.assign({}, this.state);
+  		updatedState.parameters["input shape"].dim = dim;
+  		updatedState.parameters["input shape"].values = values;
+  		this.setState(updatedState);
   	}
 
    inputField(parameterOptions){
@@ -274,7 +322,7 @@ class Layer extends React.Component {
 	if(parameterOptions.type == "diminput"){
 		return(
 			<li>{parameterOptions.title}:&nbsp;
-				<DimensionInput dim={2}/>
+				<DimensionInput updateFunction={this.onUpdate} dim={this.state.parameters["input shape"].dim} values={this.state.parameters["input shape"].values}/>
 			</li>
 		);
 	}
