@@ -4,6 +4,7 @@ import * as NumericInput from "react-numeric-input";
 import * as Scroll from 'react-scroll';
 
 const menuOptions = ["conv", "pool", "recurrent", "noise", "dense"]
+const logo = require('./img/logo.svg');
 const ico = require('./img/add-icon.svg');
 const up = require('./img/arrow-up.svg');
 const down = require('./img/arrow-down.svg');
@@ -28,11 +29,10 @@ const formatting = {
     shortname: "conv",
     fullname: "Convolution Layer",
     icon: "./img/conv-icon.svg",
-    parameters: {dimension: "2D", filters: 10, size: 3, stride: 1, padding: "Same", "activation": "ReLU"},
+    parameters: {"input shape": {dim: 2, values:[3,3]},"filter count": 10, stride: 1, padding: "Same", "activation": "ReLU"},
     parameterOptions: [
-    {title: "dimension", type:"dropdown", options:["2D", "1D"]},
-    {title: "filters", type:"number", min:1, max:999},
-	{title: "size", type:"number", min:1, max:999},
+    {title: "filter shape", type:"diminput", min:1, max:999},
+    {title: "filter count", type:"number", min:1, max:999},
     {title: "stride", type:"number", min:1, max:999},
     {title: "padding", type:"dropdown", options:["Same", "Valid", "Causal"]},
     {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"]}
@@ -45,8 +45,9 @@ const formatting = {
     shortname: "pool",
     fullname: "Pooling Layer",
     icon: "./img/pool-icon.svg",
-    parameters: {size: 2, stride: 2, type: "Max", padding: "Same"},
+    parameters: {"input shape": {dim: 2, values:[2,2]}, size: 2, stride: 2, type: "Max", padding: "Same"},
     parameterOptions: [
+    {title: "shape", type:"diminput", min:1, max:999},
     {title: "size", type:"number", min:1, max:999},
 	{title: "stride", type:"number", min:1, max:999},
     {title: "type", type:"dropdown", options:["Max Pooling", "Avg Pooling"]},
@@ -83,13 +84,14 @@ const formatting = {
     shortname: "noise",
     fullname: "Noise Layer",
     icon: "./img/noise-icon.svg",
-    parameters: {count: 10, activation: "ReLU"},
+    parameters: {type: "GaussianNoise"},
     parameterOptions: [
-    {title: "count", type:"number", min:1, max:999},
-    {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"]}
+    {title: "type", type:"dropdown", options:["GaussianNoise", "GaussianDropout", "AlphaDropout"]}
     ]
   }
 };
+
+//https://keras.io/layers/core/#flatten
 
 var scroller = Scroll.animateScroll;
 
@@ -217,7 +219,6 @@ class DimensionInput extends React.Component{
 		};
 	}
 
-
 	handleKeyPress(event) {
 	  if (event.key === 'Enter') {
 		event.target.blur(false);
@@ -246,6 +247,7 @@ class DimensionInput extends React.Component{
 	}
 
 	  handleChange(event, index) {
+	  	console.log("...");
 	  	const updatedState = Object.assign({}, this.state);
 	  	updatedState.values[index] = event.target.value;
 	  	this.setState(updatedState); // update self
@@ -256,7 +258,9 @@ class DimensionInput extends React.Component{
 		const buttons = [];
 		buttons.push(<button onClick={()=>this.updateDim(true)}><img src={up}/></button>);
 		if(this.state.values.length > 1){
-			buttons.push(<button onClick={()=>this.updateDim(false)}><img src={down}/></button>);
+				buttons.push(<button onClick={()=>this.updateDim(false)}><img src={down}/></button>);
+		} else {
+				buttons.push(<button class="disabled" onClick={()=>this.updateDim(false)}><img src={down}/></button>);
 		}
 		return(<div class="buttoncontainer">{buttons}</div>);
 	}
@@ -284,59 +288,60 @@ class Layer extends React.Component {
     this.state = {
       name: this.props.type,
       parameters: Object.assign({}, formatting[this.props.type].parameters),
-      selected: false,
+      index: this.props.index
     };
     this.input = React.createRef();
-    this.toggleEditMenu = this.toggleEditMenu.bind(this);
     this.onUpdate = this.onUpdate.bind(this);
   	}
 
   	onUpdate(dim, values){
+  		// used for DimensionInput
   		const updatedState = Object.assign({}, this.state);
   		updatedState.parameters["input shape"].dim = dim;
   		updatedState.parameters["input shape"].values = values;
   		this.setState(updatedState);
   	}
 
-   inputField(parameterOptions){
-	const output = [];
+	inputField(parameterOptions){
+		const output = [];
 
-	if(parameterOptions.type == "dropdown"){
-		var options = [];
+		if(parameterOptions.type == "dropdown"){
+			var options = [];
 
 
-		for (var i = 0; i < parameterOptions.options.length; i++) {
-			options.push(<option value={parameterOptions.options[i]}>{parameterOptions.options[i]}</option>);
+			for (var i = 0; i < parameterOptions.options.length; i++) {
+				options.push(<option value={parameterOptions.options[i]}>{parameterOptions.options[i]}</option>);
+			}
+
+			return(
+				<li>
+				<span>{parameterOptions.title}:&nbsp;</span>
+				<select name="type" defaultValue={this.state.parameters[parameterOptions.title]} onChange={(event) => this.handleChange(parameterOptions.title, event)}>
+					{options}
+				</select>
+				</li>
+			);
+		}
+
+		if(parameterOptions.type == "diminput"){
+			return(
+				<li><span>{parameterOptions.title}:&nbsp;</span>
+					<DimensionInput updateFunction={this.onUpdate} dim={this.state.parameters["input shape"].dim} values={this.state.parameters["input shape"].values}/>
+				</li>
+			);
 		}
 
 		return(
-			<li>
-			{parameterOptions.title}:&nbsp;
-			<select name="type" defaultValue={this.state.parameters[parameterOptions.title]} onChange={(event) => this.handleChange(parameterOptions.title, event)}>
-				{options}
-			</select>
-			</li>
+		  <li><span>{parameterOptions.title}:&nbsp;</span>
+		  <input onFocus={this.handleFocus} type="number" onKeyPress={this.handleKeyPress} onChange={(event) => this.handleChange(parameterOptions.title, event)} defaultValue={this.state.parameters[parameterOptions.title]}></input></li>
 		);
-	}
-
-	if(parameterOptions.type == "diminput"){
-		return(
-			<li>{parameterOptions.title}:&nbsp;
-				<DimensionInput updateFunction={this.onUpdate} dim={this.state.parameters["input shape"].dim} values={this.state.parameters["input shape"].values}/>
-			</li>
-		);
-	}
-
-	return(
-	  <li>{parameterOptions.title}:&nbsp;
-	  <input onFocus={this.handleFocus} type="number" onKeyPress={this.handleKeyPress} onChange={(event) => this.handleChange(parameterOptions.title, event)} defaultValue={this.state.parameters[parameterOptions.title]}></input></li>
-	);
 	}
 
   handleChange(parameter, event) {
   	const updatedState = Object.assign({}, this.state);
   	updatedState["parameters"][parameter] = event.target.value;
   	this.setState(updatedState);
+  	console.log("Change!!");
   }
 
 	handleKeyPress(event) {
@@ -349,12 +354,9 @@ class Layer extends React.Component {
 	  event.target.select();
 	}
 
-  toggleEditMenu(state){
-    if(state != null){
-      this.setState({selected: state});
-    } else{
-      this.setState({selected: !this.state.selected});
-    }
+  toggleEditMenu(){
+	this.props.selected(this.props.index);
+	this.props.getSelectedIndex();
   }
 
   getOptions(){
@@ -377,7 +379,7 @@ class Layer extends React.Component {
   }
 
   editMenu(){
-    if(this.state.selected){
+    if(this.props.getSelectedIndex() == this.props.index){
       return(
         <div>
           <div class="menuconnector">
@@ -472,14 +474,39 @@ class Add extends React.Component {
 class Container extends React.Component {
   constructor(props){
     super(props);
-    this.state = {items: [<Layer type="start"/>]};
-    this.addLayer = this.addLayer.bind(this); //bind to parent context
+    this.addLayer = this.addLayer.bind(this);
+  	this.selected = this.selected.bind(this);
+  	this.getSelectedIndex = this.getSelectedIndex.bind(this);
+    this.state = {items: [<Layer index={0} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="start"/>], selected: null};
+  }
+
+  getSelectedIndex(){
+  	return(this.state.selected);
+  }
+
+  selected(index){
+  	var selection;
+
+  	if(index != this.state.selected){selection = index}
+  	if(index == this.state.selected){selection = null}
+
+	const items_c = this.state.items.slice().map((item, index) => ({
+	     ...item, props:{...item.props}}));
+    
+    this.setState({items: items_c, selected: selection});
+  }
+
+  removeLayer(index){
+
   }
 
   addLayer(type){
-    const items_n = this.state.items.slice();
-    items_n.push(<Layer type={type}/>);
-    this.setState({items: items_n});
+	this.selected(null); // deselect any layers
+    this.state.items.push(<Layer index={null} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type={type}/>);
+	const items_c = this.state.items.map((item, index) => ({
+	     ...item, props:{...item.props, index: index}}));
+
+    this.setState({items: items_c});
   }
 
   drawItems(){
