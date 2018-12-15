@@ -4,10 +4,11 @@ import * as NumericInput from "react-numeric-input";
 import * as Scroll from 'react-scroll';
 
 const menuOptions = ["conv", "pool", "recurrent", "noise", "dense"]
-const logo = require('./img/logo.svg');
 const ico = require('./img/add-icon.svg');
 const up = require('./img/arrow-up.svg');
 const down = require('./img/arrow-down.svg');
+const subitem = require('./img/subitem-icon.svg');
+const maxdim = 10; //maximum dimension allowed on DimensionInput field
 
 // var target = document.getElementById("menu");
 
@@ -29,15 +30,19 @@ const formatting = {
     shortname: "conv",
     fullname: "Convolution Layer",
     icon: "./img/conv-icon.svg",
-    parameters: {"input shape": {dim: 2, values:[3,3]},"filter count": 10, stride: 1, padding: "Same", "activation": "ReLU"},
+    parameters: {"input shape": {dim: 2, values:[3,3]}, "filter count": 10, "stride": 1, "padding": "Same", "activation": "ReLU", "alpha": 0.1},
     parameterOptions: [
-    {title: "filter shape", type:"diminput", min:1, max:999},
-    {title: "filter count", type:"number", min:1, max:999},
-    {title: "stride", type:"number", min:1, max:999},
-    {title: "padding", type:"dropdown", options:["Same", "Valid", "Causal"]},
-    {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"]}
-    ]
+    {title: "filter shape", type:"diminput", min:1, max:999, depends: null},
+    {title: "filter count", type:"number", min:1, max:999, depends: null},
+    {title: "stride", type:"number", min:1, max:999, depends: null},
+    
+    {title: "padding", type:"dropdown", options:["Same", "Valid", "Causal"], depends: null}, 
 
+    {title: "activation", type:"dropdown", options:["ReLU", "LeakyReLU", "tanh", "Sigmoid"], depends: null},
+    {title: "alpha", type:"number", min:1, max:999, depends: {title: "activation", option: "LeakyReLU"}},
+
+    //aditional option which becomes visible depending on the value of depends.title's option: depends.option
+  	]
   },
   "pool": { 
     color: "#4a9fe9",
@@ -234,10 +239,10 @@ class DimensionInput extends React.Component{
 		var dim = this.state.dim;
 		var values = this.state.values.slice();
 
-		if(add){
+		if(add & dim < maxdim){
 			dim = this.state.dim + 1;
 			values.push(1);
-		}else{
+		}else if(!add & dim > 1){
 			dim = this.state.dim -1;
 			values.pop(1);
 		}
@@ -247,7 +252,7 @@ class DimensionInput extends React.Component{
 	}
 
 	  handleChange(event, index) {
-	  	console.log("...");
+	  	// console.log("...");
 	  	const updatedState = Object.assign({}, this.state);
 	  	updatedState.values[index] = event.target.value;
 	  	this.setState(updatedState); // update self
@@ -295,15 +300,24 @@ class Layer extends React.Component {
   	}
 
   	onUpdate(dim, values){
-  		// used for DimensionInput
-  		const updatedState = Object.assign({}, this.state);
-  		updatedState.parameters["input shape"].dim = dim;
-  		updatedState.parameters["input shape"].values = values;
-  		this.setState(updatedState);
+  		// used only for DimensionInput
+		var newState = Object.assign({}, this.state);
+		newState["parameters"]["input shape"] = {dim: dim, values: values};
+		this.setState(newState);
+		// console.log("--- Layer + Parameters ---")
+		// console.log(this.state.name);
+	  	// console.log(this.state.parameters);
+  		// console.log("---")
   	}
 
 	inputField(parameterOptions){
 		const output = [];
+		var itemIcon = null;
+
+		if(parameterOptions.depends != null){
+			console.log("SUBITEM!");
+			itemIcon = <img src={subitem}/>;
+		}
 
 		if(parameterOptions.type == "dropdown"){
 			var options = [];
@@ -315,7 +329,7 @@ class Layer extends React.Component {
 
 			return(
 				<li>
-				<span>{parameterOptions.title}:&nbsp;</span>
+				{itemIcon}{parameterOptions.title}:&nbsp;
 				<select name="type" defaultValue={this.state.parameters[parameterOptions.title]} onChange={(event) => this.handleChange(parameterOptions.title, event)}>
 					{options}
 				</select>
@@ -325,14 +339,14 @@ class Layer extends React.Component {
 
 		if(parameterOptions.type == "diminput"){
 			return(
-				<li><span>{parameterOptions.title}:&nbsp;</span>
+				<li>{itemIcon}{parameterOptions.title}:&nbsp;
 					<DimensionInput updateFunction={this.onUpdate} dim={this.state.parameters["input shape"].dim} values={this.state.parameters["input shape"].values}/>
 				</li>
 			);
 		}
 
 		return(
-		  <li><span>{parameterOptions.title}:&nbsp;</span>
+		  <li>{itemIcon}{parameterOptions.title}:&nbsp;
 		  <input onFocus={this.handleFocus} type="number" onKeyPress={this.handleKeyPress} onChange={(event) => this.handleChange(parameterOptions.title, event)} defaultValue={this.state.parameters[parameterOptions.title]}></input></li>
 		);
 	}
@@ -341,7 +355,6 @@ class Layer extends React.Component {
   	const updatedState = Object.assign({}, this.state);
   	updatedState["parameters"][parameter] = event.target.value;
   	this.setState(updatedState);
-  	console.log("Change!!");
   }
 
 	handleKeyPress(event) {
@@ -365,9 +378,21 @@ class Layer extends React.Component {
     }
     const options = [];
     const keys = Object.keys(this.state.parameters);
+    
     for (var i = 0; i < keys.length; i++) {
-    	const parameter = keys[i];  	
-    	options.push(this.inputField(formatting[this.state.name].parameterOptions[i]));
+    	const parameter = keys[i];
+
+    	if(formatting[this.state.name].parameterOptions[i]["depends"] != null){
+    		const optionTitle = formatting[this.state.name].parameterOptions[i]["depends"]["title"];
+    		const optionValue = formatting[this.state.name].parameterOptions[i]["depends"]["option"];
+    		// Does the depended upon parameter have the desired value for showing additional options?
+    		if(this.state.parameters[optionTitle] == optionValue){
+    			//this is a subitem
+    			options.push(this.inputField(formatting[this.state.name].parameterOptions[i]));
+    		}
+    	}else{
+	    	options.push(this.inputField(formatting[this.state.name].parameterOptions[i]));
+    	}
     }
 
     return(
@@ -414,7 +439,12 @@ class Layer extends React.Component {
 class Add extends React.Component {
   constructor(props){
     super(props);
-    this.state = {color: this.props.color, menuItems: this.props.menuItems, onClick: this.props.onClick, menuVisible: false};
+    this.state = {
+    	color: this.props.color,
+    	menuItems: this.props.menuItems,
+    	onClick: this.props.onClick,
+    	onHover: this.props.onHover,
+    	menuVisible: false};
     this.setMenuVisibility = this.setMenuVisibility.bind(this)
   }
 
@@ -462,7 +492,7 @@ class Add extends React.Component {
   render() {
     return(
       <div class="addmenu" style={this.menuHeight()} onMouseEnter={() => this.setMenuVisibility(true)} onMouseLeave = {() => this.setMenuVisibility(false)}>
-        <div class="add" style={getGradient2(formatting[this.state.color].gradient.l, formatting[this.state.color].gradient.r, "bottom")} onClick={() => this.setMenuVisibility(true)}><img alt="" src={ico}/></div>
+        <div class="add" style={getGradient2(formatting[this.state.color].gradient.l, formatting[this.state.color].gradient.r, "bottom")} onMouseEnter = {() => this.state.onHover(null)} onClick={() => this.setMenuVisibility(true)}><img alt="" src={ico}/></div>
         {this.drawMenuItems()}
       </div>
     );
@@ -516,7 +546,7 @@ class Container extends React.Component {
       out.splice((i*2-1), 0, <Animation l={this.state.items[i-1].props.type} r={this.state.items[i].props.type}/>);
     }
 
-    out.push(<Add menuItems={menuOptions} color={this.state.items[this.state.items.length-1].props.type} onClick={this.addLayer}/>);
+    out.push(<Add menuItems={menuOptions} color={this.state.items[this.state.items.length-1].props.type} onClick={this.addLayer} onHover={this.selected}/>);
     return(out);
   }
 

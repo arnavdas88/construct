@@ -305,6 +305,16 @@ input[type=number]::-webkit-inner-spin-button {
 	text-align: center !important;
 }
 
+.editmenu img {
+	/*subitem icon*/
+	margin-left: 0.4em;
+	margin-right: 0.3em;
+	padding: 0em;
+	width: 0.9em;
+	height: 0.9em;
+	position: relative !important;
+}
+
 .disabled {
 	opacity: 0.5;
 }
@@ -317,9 +327,9 @@ input[type=number]::-webkit-inner-spin-button {
 	text-align: center !important;
 }
 
-.editmenu img {
-	width: 0.5em;
-	height: 0.5em;
+.dimensioninput img {
+	width: 0.5em !important;
+	height: 0.5em !important;
 	padding: 0.1em !important;
 	margin: 0em !important;
 }
