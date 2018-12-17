@@ -1,0 +1,91 @@
+
+DENSE
+
+eg.
+model.add( Dense(32, input_shape=(16,)) )
+model.add( Dense(32) )
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+Currently implemented Arguments:
+
+units = 32
+input_shape = (16,)
+activation = None
+use_bias = True
+
+_ _ _ _ _ _ _ _
+All Arguments:
+
+units
+activation
+use_bias
+kernel_initializer
+bias_initializer
+kernel_regularizer
+bias_regularizer
+activity_regularizer
+kernel_constraint
+bias_constraint
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ACTIVATION
+
+eg.
+model.add( Activation(activation))
+
+where 'activation' is of the following:
+
+- softmax(x, axis=-1)
+x: input tensor
+axis: Integer, axis along which the softmax normalization is applied
+
+Exponential Linear Unit
+- elu(x)
+x: input tensor
+alpha: A scalar, slope of negative section
+
+Scaled Exponential Linear Unit
+- selu(x)
+x: A tensor or variable to compute the activation for
+
+Softplus
+- softplus(x)
+x: input tensor
+
+Softsign
+-softsign(x)
+
+Rectified Linear Unit
+-relu(x, alpha=0,0, max_value=None, threshold=0.0)
+x: Input tensor.
+alpha: float. Slope of the negative part. Defaults to zero.
+max_value: float. Saturation threshold.
+threshold: float. Threshold value for thresholded activation.
+
+
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+Currently implemented Arguments:
+
+units = 32
+input_shape = (16,)
+activation = None
+use_bias = True
+
+_ _ _ _ _ _ _ _
+All Arguments:
+
+units
+activation
+use_bias
+kernel_initializer
+bias_initializer
+kernel_regularizer
+bias_regularizer
+activity_regularizer
+kernel_constraint
+bias_constraint
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+

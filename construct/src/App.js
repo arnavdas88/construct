@@ -3,7 +3,7 @@ import './App.css';
 import * as NumericInput from "react-numeric-input";
 import * as Scroll from 'react-scroll';
 
-const menuOptions = ["conv", "pool", "recurrent", "noise", "dense"]
+const menuOptions = ["conv", "pool", "recurrent", "noise", "dense", "activation", "flatten"]
 const ico = require('./img/add-icon.svg');
 const up = require('./img/arrow-up.svg');
 const down = require('./img/arrow-down.svg');
@@ -50,7 +50,7 @@ const formatting = {
     shortname: "pool",
     fullname: "Pooling Layer",
     icon: "./img/pool-icon.svg",
-    parameters: {"input shape": {dim: 2, values:[2,2]}, size: 2, stride: 2, type: "Max", padding: "Same"},
+    parameters: {"input shape": {dim: 2, values: [2,2]}, size: 2, stride: 2, type: "Max", padding: "Same"},
     parameterOptions: [
     {title: "shape", type:"diminput", min:1, max:999},
     {title: "size", type:"number", min:1, max:999},
@@ -89,6 +89,30 @@ const formatting = {
     shortname: "noise",
     fullname: "Noise Layer",
     icon: "./img/noise-icon.svg",
+    parameters: {type: "GaussianNoise"},
+    parameterOptions: [
+    {title: "type", type:"dropdown", options:["GaussianNoise", "GaussianDropout", "AlphaDropout"]}
+    ]
+  },
+  "activation": { 
+    color: "#63bc62",
+    gradient: {l: "#83e356", r: "#41946f"},
+    shortname: "activation",
+    fullname: "Activation Layer",
+    icon: "./img/activation-icon.svg",
+    parameters: {type: "ReLU", alpha: 0.1, alpha2: 0.2},
+    parameterOptions: [
+    {title: "type", type:"dropdown", options:["Tanh", "ReLU", "Softmax", "ELU", "SELU", "Softplus", "Softsign"]},
+    {title: "slope", type:"number", min:0, max:1, depends: {title: "type", option: "ReLU"}},
+    {title: "alpha2", type:"number", min:0, max:1, depends: {title: "type", option: "ELU"}}
+    ]
+  },
+  "flatten": { 
+    color: "#e85283",
+    gradient: {l: "#f68399", r: "#dc2770"},
+    shortname: "flatten",
+    fullname: "Flatten",
+    icon: "./img/activation-icon.svg",
     parameters: {type: "GaussianNoise"},
     parameterOptions: [
     {title: "type", type:"dropdown", options:["GaussianNoise", "GaussianDropout", "AlphaDropout"]}
@@ -315,7 +339,6 @@ class Layer extends React.Component {
 		var itemIcon = null;
 
 		if(parameterOptions.depends != null){
-			console.log("SUBITEM!");
 			itemIcon = <img src={subitem}/>;
 		}
 
