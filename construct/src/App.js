@@ -8,6 +8,7 @@ const ico = require('./img/add-icon.svg');
 const up = require('./img/arrow-up.svg');
 const down = require('./img/arrow-down.svg');
 const subitem = require('./img/subitem-icon.svg');
+const constructicon = require('./img/construct-icon.png')
 const maxdim = 10; //maximum dimension allowed on DimensionInput field
 
 // var target = document.getElementById("menu");
@@ -313,14 +314,23 @@ class DimensionInput extends React.Component{
 
 class Layer extends React.Component {
   constructor(props){
-    super(props);
-    this.state = {
-      name: this.props.type,
-      parameters: Object.assign({}, formatting[this.props.type].parameters),
-      index: this.props.index
-    };
-    this.input = React.createRef();
-    this.onUpdate = this.onUpdate.bind(this);
+	    super(props);
+	    this.state = {
+	      name: this.props.type,
+	      parameters: Object.assign({}, formatting[this.props.type].parameters),
+	      index: this.props.index
+	    };
+	    this.input = React.createRef();
+	    this.onUpdate = this.onUpdate.bind(this);
+	    this.updateParent = this.updateParent.bind(this);
+	  	this.updateParent();
+  	}
+
+  	updateParent(){
+  		console.log("Layer parameters changed, telling parent obj.");
+  		const layerState = Object.assign({}, this.state);
+  		console.log(layerState);
+  		
   	}
 
   	onUpdate(dim, values){
@@ -328,6 +338,7 @@ class Layer extends React.Component {
 		var newState = Object.assign({}, this.state);
 		newState["parameters"]["input shape"] = {dim: dim, values: values};
 		this.setState(newState);
+		this.updateParent();
 		// console.log("--- Layer + Parameters ---")
 		// console.log(this.state.name);
 	  	// console.log(this.state.parameters);
@@ -378,6 +389,7 @@ class Layer extends React.Component {
   	const updatedState = Object.assign({}, this.state);
   	updatedState["parameters"][parameter] = event.target.value;
   	this.setState(updatedState);
+  	this.updateParent();
   }
 
 	handleKeyPress(event) {
@@ -530,7 +542,12 @@ class Container extends React.Component {
     this.addLayer = this.addLayer.bind(this);
   	this.selected = this.selected.bind(this);
   	this.getSelectedIndex = this.getSelectedIndex.bind(this);
-    this.state = {items: [<Layer index={0} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="start"/>], selected: null};
+    this.state = {items: [
+    	<Layer index={0} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="start"/>,
+    	<Layer index={1} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="conv"/>,
+    	<Layer index={2} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="pool"/>,
+    	<Layer index={3} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="dense"/>
+    	], selected: null};
   }
 
   getSelectedIndex(){
@@ -556,6 +573,7 @@ class Container extends React.Component {
   addLayer(type){
 	this.selected(null); // deselect any layers
     this.state.items.push(<Layer index={null} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type={type}/>);
+
 	const items_c = this.state.items.map((item, index) => ({
 	     ...item, props:{...item.props, index: index}}));
 
@@ -573,24 +591,43 @@ class Container extends React.Component {
     return(out);
   }
 
+  generateCode(){
+  	var codestr = "";
+
+  	console.log("Generating Code...");
+  	console.log(this.state.items);
+
+
+  	document.getElementById("codebox").innerHTML = "Testing";
+  }
+
   render(){
     return(
-      <div class="container" id="container">
-        {this.drawItems()}
-      </div>
+    	<div>
+	      <div class="header">
+		      <img src={constructicon}/><h2>Sequential Model Generator for Keras</h2>
+	      </div>
+	      <div class="container" id="container">
+	        {this.drawItems()}
+	      </div>
+  	      <div class="codeView">
+	          <button onClick={() => this.generateCode()}>Generate Code</button>
+	          <div id="codebox">Code Goes Here!</div>
+	      </div>
+    	</div>
     );
   }
 }
 
 class App extends React.Component {
-  render() {
-    return (
-      <div className="App">
-          <Container/>
-      </div>
-      
-    );
-  }
+	render() {
+	return (
+	  <div className="App">
+	      <Container />
+	  </div>
+	  
+	);
+	}
 }
 
 export default App;
