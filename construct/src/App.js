@@ -3,6 +3,9 @@ import './App.css';
 import * as NumericInput from "react-numeric-input";
 import * as Scroll from 'react-scroll';
 
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { androidstudio } from 'react-syntax-highlighter/dist/styles/hljs/';
+
 const menuOptions = ["conv", "pool", "recurrent", "noise", "dense", "activation", "flatten"]
 const ico = require('./img/add-icon.svg');
 const up = require('./img/arrow-up.svg');
@@ -10,8 +13,6 @@ const down = require('./img/arrow-down.svg');
 const subitem = require('./img/subitem-icon.svg');
 const constructicon = require('./img/construct-icon.png')
 const maxdim = 10; //maximum dimension allowed on DimensionInput field
-
-// var target = document.getElementById("menu");
 
 const formatting = {
   "start": { 
@@ -190,8 +191,6 @@ class Animation extends React.Component {
   }
 }
 
-
-
 class Connector extends React.Component {
   constructor(props){
     super(props);
@@ -327,10 +326,8 @@ class Layer extends React.Component {
   	}
 
   	updateParent(){
-  		console.log("Layer parameters changed, telling parent obj.");
   		const layerState = Object.assign({}, this.state);
-  		console.log(layerState);
-  		
+  		this.props.updateParentData(this.props.index, this.state);
   	}
 
   	onUpdate(dim, values){
@@ -339,10 +336,6 @@ class Layer extends React.Component {
 		newState["parameters"]["input shape"] = {dim: dim, values: values};
 		this.setState(newState);
 		this.updateParent();
-		// console.log("--- Layer + Parameters ---")
-		// console.log(this.state.name);
-	  	// console.log(this.state.parameters);
-  		// console.log("---")
   	}
 
 	inputField(parameterOptions){
@@ -441,7 +434,7 @@ class Layer extends React.Component {
   editMenu(){
     if(this.props.getSelectedIndex() == this.props.index){
       return(
-        <div>
+        <div class="menudropdown">
           <div class="menuconnector">
             <div class="menuconnectorline" style={{'border-bottom-color': formatting[this.state.name].color}}></div>
           </div>
@@ -539,15 +532,27 @@ class Add extends React.Component {
 class Container extends React.Component {
   constructor(props){
     super(props);
+ 	this.updateCodeData = this.updateCodeData.bind(this);
     this.addLayer = this.addLayer.bind(this);
   	this.selected = this.selected.bind(this);
   	this.getSelectedIndex = this.getSelectedIndex.bind(this);
+  	this.generateCode = this.generateCode.bind(this);
     this.state = {items: [
-    	<Layer index={0} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="start"/>,
-    	<Layer index={1} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="conv"/>,
-    	<Layer index={2} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="pool"/>,
-    	<Layer index={3} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="dense"/>
-    	], selected: null};
+    	<Layer index={0} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="start" updateParentData={this.updateCodeData}/>,
+    	<Layer index={1} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="conv" updateParentData={this.updateCodeData}/>,
+    	<Layer index={2} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="pool" updateParentData={this.updateCodeData}/>,
+    	<Layer index={3} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="dense" updateParentData={this.updateCodeData}/>
+    	],
+    	selected: null,
+    	codeData: {},
+    	codeStr: "Testing123"
+    };
+  }
+
+  updateCodeData(index, parameters){
+  	this.state.codeData[index] = parameters;
+  	this.generateCode();
+  	this.render();
   }
 
   getSelectedIndex(){
@@ -567,12 +572,12 @@ class Container extends React.Component {
   }
 
   removeLayer(index){
-
+  	//to be added ...
   }
 
   addLayer(type){
 	this.selected(null); // deselect any layers
-    this.state.items.push(<Layer index={null} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type={type}/>);
+    this.state.items.push(<Layer index={null} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type={type} updateParentData={this.updateCodeData}/>);
 
 	const items_c = this.state.items.map((item, index) => ({
 	     ...item, props:{...item.props, index: index}}));
@@ -592,13 +597,26 @@ class Container extends React.Component {
   }
 
   generateCode(){
-  	var codestr = "";
-
   	console.log("Generating Code...");
-  	console.log(this.state.items);
+  	var codestr = "";
+  	var layertype;
 
+  	codestr += "import keras\n"
+	codestr += "from keras.models import Sequential\n"
 
-  	document.getElementById("codebox").innerHTML = "Testing";
+  	codestr += "model = Sequential()\n";
+  	
+
+  	for (var i in this.state.codeData){
+		layertype = this.state.codeData[i].name;
+		if(layertype != "start"){
+			codestr += "model.add(" + layertype + "()" + ")" + '\n';
+		}
+	}
+  	
+  	var newState = Object.assign({}, this.state);
+	newState["codeStr"] = codestr;
+	this.setState(newState);
   }
 
   render(){
@@ -610,10 +628,10 @@ class Container extends React.Component {
 	      <div class="container" id="container">
 	        {this.drawItems()}
 	      </div>
-  	      <div class="codeView">
-	          <button onClick={() => this.generateCode()}>Generate Code</button>
-	          <div id="codebox">Code Goes Here!</div>
-	      </div>
+	      <div class="codeView">
+      	      <SyntaxHighlighter language='python' style={androidstudio}>{this.state.codeStr}</SyntaxHighlighter>
+			  <button onClick={()=>alert("copy")}>Copy</button>
+	        </div>
     	</div>
     );
   }
