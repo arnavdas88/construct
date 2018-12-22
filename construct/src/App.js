@@ -14,6 +14,16 @@ const subitem = require('./img/subitem-icon.svg');
 const constructicon = require('./img/construct-icon.png')
 const maxdim = 10; //maximum dimension allowed on DimensionInput field
 
+const copyToClipboard = str => {
+  //src: https://hackernoon.com/copying-text-to-clipboard-with-javascript-df4d4988697f
+  const el = document.createElement('textarea');
+  el.value = str;
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+};
+
 const formatting = {
   "start": { 
     color: "#4fcebd",
@@ -122,6 +132,14 @@ const formatting = {
   }
 };
 
+const codeformatting = {
+	layers: {
+		"dense": "Dense",
+		"conv": "Conv2D",
+		"pool": "MaxPooling2D",
+		"activation": "Activation",
+	}
+}
 //https://keras.io/layers/core/#flatten
 
 var scroller = Scroll.animateScroll;
@@ -539,9 +557,9 @@ class Container extends React.Component {
   	this.generateCode = this.generateCode.bind(this);
     this.state = {items: [
     	<Layer index={0} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="start" updateParentData={this.updateCodeData}/>,
-    	<Layer index={1} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="conv" updateParentData={this.updateCodeData}/>,
-    	<Layer index={2} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="pool" updateParentData={this.updateCodeData}/>,
-    	<Layer index={3} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="dense" updateParentData={this.updateCodeData}/>
+    	// <Layer index={1} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="conv" updateParentData={this.updateCodeData}/>,
+    	// <Layer index={2} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="pool" updateParentData={this.updateCodeData}/>,
+    	// <Layer index={3} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="dense" updateParentData={this.updateCodeData}/>
     	],
     	selected: null,
     	codeData: {},
@@ -602,15 +620,15 @@ class Container extends React.Component {
   	var layertype;
 
   	codestr += "import keras\n"
-	codestr += "from keras.models import Sequential\n"
+	codestr += "from keras.models import Sequential\n\n"
 
   	codestr += "model = Sequential()\n";
   	
 
   	for (var i in this.state.codeData){
 		layertype = this.state.codeData[i].name;
-		if(layertype != "start"){
-			codestr += "model.add(" + layertype + "()" + ")" + '\n';
+		if(codeformatting["layers"][layertype] != null){
+			codestr += "model.add(" + codeformatting["layers"][layertype] + "(args)" + ")" + '\n';
 		}
 	}
   	
@@ -630,7 +648,7 @@ class Container extends React.Component {
 	      </div>
 	      <div class="codeView">
       	      <SyntaxHighlighter language='python' style={androidstudio}>{this.state.codeStr}</SyntaxHighlighter>
-			  <button onClick={()=>alert("copy")}>Copy</button>
+			  <button onClick={()=>copyToClipboard(this.state.codeStr)}>Copy</button>
 	        </div>
     	</div>
     );
@@ -649,4 +667,5 @@ class App extends React.Component {
 }
 
 export default App;
+
 
