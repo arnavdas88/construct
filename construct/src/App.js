@@ -1,17 +1,18 @@
 import React from 'react';
 import './App.css';
-
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { androidstudio } from 'react-syntax-highlighter/dist/styles/hljs/';
 
-const menuOptions = ["conv", "pool", "noise", "dense", "activation", "flatten"]
+const menuOptions = ["conv", "pool", "noise", "dense", "flatten"]
 // const menuOptions = ["conv", "pool", "recurrent", "noise", "dense", "activation", "flatten"]
 const ico = require('./img/add-icon.svg');
 const up = require('./img/arrow-up.svg');
 const down = require('./img/arrow-down.svg');
 const subitem = require('./img/subitem-icon.svg');
 const constructicon = require('./img/construct-icon.png')
-const maxdim = 10; //maximum dimension allowed on DimensionInput field
+const maxdim = 4; //maximum dimension allowed on DimensionInput field
+const mindim = 2; //maximum dimension allowed on DimensionInput field
+
 
 const copyToClipboard = str => {
   //src: https://hackernoon.com/copying-text-to-clipboard-with-javascript-df4d4988697f
@@ -30,7 +31,7 @@ const formatting = {
     shortname: "start",
     fullname: "Input Layer",
     icon: "./img/start-icon.svg",
-    parameters: {"input shape": {dim: 2, values:[25,25]}},
+    parameters: {"input shape": {dim: 3, values:[25,25,1]}},
     parameterOptions: [
     {title: "input shape", type:"diminput", min:1, max:999},
     ]
@@ -46,10 +47,8 @@ const formatting = {
     {title: "filter count", type:"number", min:1, max:999, depends: null},
     {title: "filter shape", type:"diminput", min:1, max:999, depends: null},
     {title: "stride", type:"number", min:1, max:999, depends: null},
-    
     {title: "padding", type:"dropdown", options:["Same", "Valid", "Causal"], depends: null}, 
-
-    {title: "activation", type:"dropdown", options:["Softmax","ReLU", "LeakyReLU", "tanh", "Sigmoid"], depends: null},
+    {title: "activation", type:"dropdown", options:["Softmax","ReLU", "LeakyReLU", "Tanh", "Sigmoid", "None"], depends: null},
     {title: "alpha", type:"number", min:1, max:999, depends: {title: "activation", option: "LeakyReLU"}},
 
     //aditional option which becomes visible depending on the value of depends.title's option: depends.option
@@ -101,9 +100,14 @@ const formatting = {
     shortname: "noise",
     fullname: "Noise Layer",
     icon: "./img/noise-icon.svg",
-    parameters: {type: "GaussianNoise"},
+    parameters: {type: "GaussianNoise", "stddev":0, "dropout rate":0, "alpha":0, "rate":0, "seed":0},
     parameterOptions: [
-    {title: "type", type:"dropdown", options:["GaussianNoise", "GaussianDropout", "AlphaDropout"]}
+    {title: "type", type:"dropdown", options:["GaussianNoise", "GaussianDropout", "AlphaDropout"]},
+    {title: "stddev", type:"number", min:1, max:999, depends: {title: "type", option: "GaussianNoise"}},
+    {title: "dropout rate", type:"number", min:1, max:999, depends: {title: "type", option: "GaussianDropout"}},
+    {title: "alpha", type:"number", min:1, max:999, depends: {title: "type", option: "AlphaDropout"}},
+    {title: "rate", type:"number", min:1, max:999, depends: {title: "type", option: "AlphaDropout"}},
+    {title: "seed", type:"number", min:1, max:999, depends: {title: "type", option: "AlphaDropout"}}
     ]
   },
   "activation": { 
@@ -112,12 +116,12 @@ const formatting = {
     shortname: "activation",
     fullname: "Activation Layer",
     icon: "./img/activation-icon.svg",
-    parameters: {type: "ReLU", alpha: 0.1, alpha2: 0.2},
+    parameters: {activation: "ReLU", alpha: 0.1},
     parameterOptions: [
-    {title: "type", type:"dropdown", options:["Tanh", "ReLU", "Softmax", "ELU", "SELU", "Softplus", "Softsign"]},
-    {title: "slope", type:"number", min:0, max:1, depends: {title: "type", option: "ReLU"}},
-    {title: "alpha2", type:"number", min:0, max:1, depends: {title: "type", option: "ELU"}}
+	{title: "activation", type:"dropdown", options:["Softmax","ReLU", "LeakyReLU", "Tanh", "Sigmoid"], depends: null},
+    {title: "alpha", type:"number", min:1, max:999, depends: {title: "activation", option: "LeakyReLU"}},
     ]
+
   },
   "flatten": { 
     color: "#e85283",
@@ -130,16 +134,6 @@ const formatting = {
     ]
   }
 };
-
-const codeformatting = {
-	layers: {
-		"dense": "Dense",
-		"conv": "Conv2D",
-		"pool": "MaxPooling2D",
-		"activation": "Activation",
-	}
-}
-//https://keras.io/layers/core/#flatten
 
 
 function tintColor(color, percent) {   
@@ -230,7 +224,6 @@ class Connector extends React.Component {
 
     ctx.beginPath();
     ctx.moveTo(0, height/2);
-    // ctx.lineTo(width, height/2+angle);
 
     for(x=0; x<=width; x+=5){
         y = Math.sin((x+angle*30)*Math.PI/180)*40/angle + height/2;
@@ -242,8 +235,6 @@ class Connector extends React.Component {
     ctx.lineCap = 'round';      
     ctx.lineWidth=10;
     ctx.stroke()
-    // ctx.strokeStyle = '#ff0000';
-    // ctx.stroke();
     ctx.restore();
   }
 
@@ -281,7 +272,7 @@ class DimensionInput extends React.Component{
 		if(add & dim < maxdim){
 			dim = this.state.dim + 1;
 			values.push(1);
-		}else if(!add & dim > 1){
+		}else if(!add & dim > mindim){
 			dim = this.state.dim -1;
 			values.pop(1);
 		}
@@ -291,7 +282,6 @@ class DimensionInput extends React.Component{
 	}
 
 	  handleChange(event, index) {
-	  	// console.log("...");
 	  	const updatedState = Object.assign({}, this.state);
 	  	updatedState.values[index] = event.target.value;
 	  	this.setState(updatedState); // update self
@@ -301,7 +291,7 @@ class DimensionInput extends React.Component{
 	getButtons(minus){
 		const buttons = [];
 		buttons.push(<button onClick={()=>this.updateDim(true)}><img src={up} alt=""/></button>);
-		if(this.state.values.length > 1){
+		if(this.state.values.length > 2){
 				buttons.push(<button onClick={()=>this.updateDim(false)}><img src={down} alt=""/></button>);
 		} else {
 				buttons.push(<button class="disabled" onClick={()=>this.updateDim(false)}><img src={down} alt=""/></button>);
@@ -435,6 +425,10 @@ class Layer extends React.Component {
     	}
     }
 
+	// if(this.state.name != "start"){
+	// 	options.push(<li style={{"text-align":"right"}}><div class="delete" onClick={()=>this.props.deleteLayer(this.state.index)}>Delete</div></li>)
+	// }
+
     return(
 		<ul>
             <hr/>
@@ -547,14 +541,15 @@ class Container extends React.Component {
  	this.updateCodeData = this.updateCodeData.bind(this);
     this.addLayer = this.addLayer.bind(this);
   	this.selected = this.selected.bind(this);
+  	this.deleteLayer = this.deleteLayer.bind(this);
   	this.getSelectedIndex = this.getSelectedIndex.bind(this);
   	this.generateCode = this.generateCode.bind(this);
     this.state = {items: [
-    	<Layer index={0} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="start" updateParentData={this.updateCodeData}/>,
-    	<Layer index={1} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="conv" updateParentData={this.updateCodeData}/>,
-    	<Layer index={2} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="pool" updateParentData={this.updateCodeData}/>,
-    	<Layer index={3} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="flatten" updateParentData={this.updateCodeData}/>,
-    	<Layer index={4} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type="dense" updateParentData={this.updateCodeData}/>
+    	<Layer index={0} selected={this.selected} deleteLayer={this.deleteLayer} getSelectedIndex={this.getSelectedIndex} type="start" updateParentData={this.updateCodeData}/>,
+    	// <Layer index={1} selected={this.selected} deleteLayer={this.deleteLayer} getSelectedIndex={this.getSelectedIndex} type="conv" updateParentData={this.updateCodeData}/>,
+    	// <Layer index={2} selected={this.selected} deleteLayer={this.deleteLayer} getSelectedIndex={this.getSelectedIndex} type="pool" updateParentData={this.updateCodeData}/>,
+    	// <Layer index={3} selected={this.selected} deleteLayer={this.deleteLayer} getSelectedIndex={this.getSelectedIndex} type="noise" updateParentData={this.updateCodeData}/>,
+    	// <Layer index={4} selected={this.selected} deleteLayer={this.deleteLayer} getSelectedIndex={this.getSelectedIndex} type="dense" updateParentData={this.updateCodeData}/>
 
     	],
     	selected: null,
@@ -588,13 +583,20 @@ class Container extends React.Component {
     this.setState({items: items_c, selected: selection});
   }
 
-  removeLayer(index){
-  	//to be added ...
+  deleteLayer(index){
+  	var newState = Object.assign({}, this.state);
+  	newState.items.splice(index,1);
+  	newState.items.push(<Layer index={null} selected={this.selected} deleteLayer={this.deleteLayer} getSelectedIndex={this.getSelectedIndex} type={"conv"} updateParentData={this.updateCodeData}/>);
+
+	var items_c = newState.items.map((item, index) => ({
+	     ...item, props:{...item.props, index: index}}));
+
+    this.setState(newState);
   }
 
   addLayer(type){
 	this.selected(null); // deselect any layers
-    this.state.items.push(<Layer index={null} selected={this.selected} getSelectedIndex={this.getSelectedIndex} type={type} updateParentData={this.updateCodeData}/>);
+    this.state.items.push(<Layer index={null} selected={this.selected} deleteLayer={this.deleteLayer} getSelectedIndex={this.getSelectedIndex} type={type} updateParentData={this.updateCodeData}/>);
 
 	const items_c = this.state.items.map((item, index) => ({
 	     ...item, props:{...item.props, index: index}}));
@@ -627,9 +629,9 @@ class Container extends React.Component {
   	  // This doesn't have to be hard-coded
 	  case "conv":
 	    functionName = "Conv";
-	   	if(input_shape.dim == 1){
+	   	if(input_shape.dim == 2){
 	    	functionName += "1D";
-	    }else if(input_shape.dim == 2){
+	    }else if(input_shape.dim == 3){
 	    	functionName += "2D";
 	    }else{
 	    	functionName += "3D";
@@ -643,18 +645,22 @@ class Container extends React.Component {
 	    for (var parameter in parameters){
 	    	switch (parameter) {
 	    		case "input shape":
+
 	    			args += "kernel_size=[" + parameters[parameter].values + ']';
 	    			break;
 	    		case "filter count":
 	    			args += ",filters=" + parameters[parameter];
 	    			break;
 	    		case "stride":
-	    			args += ",stride=" + parameters[parameter];
+	    			args += ",strides=" + parameters[parameter];
 	    			break;
 	    		case "padding":
 	    			args += ",padding=" + "'" + parameters[parameter].toLowerCase() + "'";
 	    			break;
 	    		case "activation":
+	    			if(parameters[parameter] == "None"){
+	    				break;
+	    			}
 	    			args += ",activation=" + "'" + parameters[parameter].toLowerCase() + "'";
 	    			if(parameters[parameter] == "LeakyReLU"){
 	    				args += ",alpha=" + parameters["alpha"];
@@ -665,16 +671,15 @@ class Container extends React.Component {
 
 	    break;
 	  case "pool":
-    	console.log(parameters);
 	  	if(parameters.type == "Max Pooling"){
 	  		functionName += "MaxPooling";
 	  	}
 	  	if(parameters.type == "Avg Pooling"){
 	  		functionName += "AvgPooling";
 	  	}
-	    if(input_shape.dim == 1){
+	    if(input_shape.dim == 2){
 	    	functionName += "1D";
-	    }else if(input_shape.dim == 2){
+	    }else if(input_shape.dim == 3){
 	    	functionName += "2D";
 	    }else{
 	    	functionName += "3D";
@@ -686,7 +691,7 @@ class Container extends React.Component {
 	    			args += "pool_size=" + parameters[parameter];
 	    			break;
 	    		case "stride":
-	    			args += ",stride=" + parameters[parameter];
+	    			args += ",strides=" + parameters[parameter];
 	    			break;
 	    		case "padding":
 	    			args += ",padding=" + "'" + parameters[parameter].toLowerCase() + "'";
@@ -699,17 +704,30 @@ class Container extends React.Component {
 	    			break;
 	    	}
 		}	
-
-
-      	console.log(parameters);
 	    break;
+
 	  case "noise":
-	    functionName = "Tuesday";
+	  	functionName = parameters.type;
+    	switch (parameters.type) {
+    		case "GaussianNoise":
+	    		args += "stddev=" + parameters["stddev"];
+    			break;
+    		case "GaussianDropout":
+	    		args += "rate=" + parameters["dropout rate"];
+    			break;
+    		case "AlphaDropout":
+	    		args += "alpha=" + parameters["alpha"];
+	    		args += ",rate=" + parameters["rate"];
+	    		args += ",seed=" + parameters["seed"];
+    			break;
+		}	
+
 	    break;
 	  case "recurrent":
 	    functionName = "RNN";
 	    break;
 	  case "dense":
+	  	functionName = "Dense";
 	  	for (var parameter in parameters){
 	    	switch (parameter) {
 	    		case "neuron count":
@@ -722,7 +740,6 @@ class Container extends React.Component {
 	    			}
 	    			break;
 	    	}
-	    	console.log(parameters);
 		}	
 	    break;
 	  case "flatten":
@@ -740,7 +757,11 @@ class Container extends React.Component {
   	var layertype;
 
   	codestr += "import keras\n"
-	codestr += "from keras.models import Sequential\n\n"
+	// codestr += "from keras.models import Sequential\n\n"
+
+	codestr += "from keras.models import Sequential\n"
+	codestr += "from keras.layers import Input, Dense, Dropout, Flatten, Conv2D, Conv1D, Conv3D, MaxPooling2D, GaussianNoise\n"
+
   	codestr += "model = Sequential()\n";
 
   	for (var i in this.state.codeData){

@@ -11,8 +11,7 @@ body {
 button {
 	cursor: pointer;
 	color: rgba(255,255,255,0.9);
-	/*background: linear-gradient(to top, #8663f7, #8fffe3);*/
-	background: rgba(120,165,255,0.2);
+	background: #1c1f21;
 	border: none;
 	border-radius: 1.5em;
 	padding: 0.8em;
@@ -23,7 +22,7 @@ button {
 }
 
 button:hover {
-	background: rgba(120,165,255,0.5);
+	background: #2b3033;
 }
 
 .App {
@@ -161,10 +160,8 @@ img {
 }
 
 .menu {
-  /*width: 10em;*/
   position: absolute;
-  height: 100%;
-  margin-top: -4em;
+  margin-top: -2.65em;
   margin-left: 1.5em;
 }
 
@@ -405,4 +402,15 @@ input[type=number]::-webkit-inner-spin-button {
 	height: 50px;
 	x: 50px;
 	y: 50px;
+}
+
+.delete{
+	cursor: pointer;
+	background: rgba(0,0,0,0.3);
+	border-radius: 1.5em;
+	padding: 0.5em;
+	width: 3.5em;
+	width: 3.5em;
+	text-align: center;
+	font-size: 0.6em;
 }
