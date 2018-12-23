@@ -62,21 +62,15 @@ button:hover {
 	padding-top: 0em;
 }
 
-#codebox {
-	color: white;
-	background: #2b3033;
-	height: 10em;
-	width: 96%;
+.codeBox {
+	color: white !important;
+	background: #2b3033 !important;
+	box-shadow: 0em 0em 2em rgba(0,0,0,0.1) inset;
 	border: none !important;
-	border-radius: 0.5em;
-	padding-top: 1em;
-	padding-bottom: 1em;
-	padding-left: 2%;
-	padding-right: 2%;
-	text-align: left;
-	font-size: 1em;
+	border-radius: 1em;
+	font-size: 0.9em !important;
 	margin-bottom: 1em;
-	resize: none;
+	padding: 1.6em !important;
 }
 
 .container {
@@ -116,6 +110,7 @@ button:hover {
 
 img {
   -webkit-user-drag: none;
+  cursor: pointer;
 }
 
 .connector {
