@@ -2,6 +2,7 @@ import React from 'react';
 import './App.css';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { androidstudio } from 'react-syntax-highlighter/dist/styles/hljs/';
+import swal from 'sweetalert'
 
 const menuOptions = ["conv", "pool", "noise", "dense", "flatten"]
 // const menuOptions = ["conv", "pool", "recurrent", "noise", "dense", "activation", "flatten"]
@@ -620,7 +621,7 @@ class Container extends React.Component {
   	var args = "";
   	var output;
   	
-  	if(index == 1){
+  	if(index === 1){
 	  	// Since input shape needs only needs to be explicitly stated once
   		args += "input_shape=[" + input_shape.values + ']';
   	}
@@ -629,16 +630,16 @@ class Container extends React.Component {
   	  // This doesn't have to be hard-coded
 	  case "conv":
 	    functionName = "Conv";
-	   	if(input_shape.dim == 2){
+	   	if(input_shape.dim === 2){
 	    	functionName += "1D";
-	    }else if(input_shape.dim == 3){
+	    }else if(input_shape.dim === 3){
 	    	functionName += "2D";
 	    }else{
 	    	functionName += "3D";
 	    }
 
 	    const lastIndex = parameters.Length-1;
-	    if(index == 1){
+	    if(index === 1){
 	    	args += ",";
 	    }
 
@@ -658,28 +659,30 @@ class Container extends React.Component {
 	    			args += ",padding=" + "'" + parameters[parameter].toLowerCase() + "'";
 	    			break;
 	    		case "activation":
-	    			if(parameters[parameter] == "None"){
+	    			if(parameters[parameter] === "None"){
 	    				break;
 	    			}
 	    			args += ",activation=" + "'" + parameters[parameter].toLowerCase() + "'";
-	    			if(parameters[parameter] == "LeakyReLU"){
+	    			if(parameters[parameter] === "LeakyReLU"){
 	    				args += ",alpha=" + parameters["alpha"];
 	    			}
+	    			break;
+	    		default:
 	    			break;
 	    	}
 		}	
 
 	    break;
 	  case "pool":
-	  	if(parameters.type == "Max Pooling"){
+	  	if(parameters.type === "Max Pooling"){
 	  		functionName += "MaxPooling";
 	  	}
-	  	if(parameters.type == "Avg Pooling"){
+	  	if(parameters.type === "Avg Pooling"){
 	  		functionName += "AvgPooling";
 	  	}
-	    if(input_shape.dim == 2){
+	    if(input_shape.dim === 2){
 	    	functionName += "1D";
-	    }else if(input_shape.dim == 3){
+	    }else if(input_shape.dim === 3){
 	    	functionName += "2D";
 	    }else{
 	    	functionName += "3D";
@@ -698,9 +701,11 @@ class Container extends React.Component {
 	    			break;
 	    		case "activation":
 	    			args += ",activation=" + "'" + parameters[parameter].toLowerCase() + "'";
-	    			if(parameters[parameter] == "LeakyReLU"){
+	    			if(parameters[parameter] === "LeakyReLU"){
 	    				args += ",alpha=" + parameters["alpha"];
 	    			}
+	    			break;
+	    		default:
 	    			break;
 	    	}
 		}	
@@ -720,6 +725,8 @@ class Container extends React.Component {
 	    		args += ",rate=" + parameters["rate"];
 	    		args += ",seed=" + parameters["seed"];
     			break;
+    		default:
+    			break;
 		}	
 
 	    break;
@@ -735,9 +742,11 @@ class Container extends React.Component {
 	    			break;
 	    		case "activation":
 	    			args += ",activation=" + "'" + parameters[parameter].toLowerCase() + "'";
-	    			if(parameters[parameter] == "LeakyReLU"){
+	    			if(parameters[parameter] === "LeakyReLU"){
 	    				args += ",alpha=" + parameters["alpha"];
 	    			}
+	    			break;
+	    		default:
 	    			break;
 	    	}
 		}	
@@ -749,42 +758,59 @@ class Container extends React.Component {
 
 	output = functionName + "(" + args;
 
-  	return output
+  	return {body: output, header: functionName}
   }
 
   generateCode(){
-  	var codestr = "";
+  	var codebody = "";
+  	var importsstr = "";
+  	var imports = [];
   	var layertype;
+  	var formatted;
 
-  	codestr += "import keras\n"
-	// codestr += "from keras.models import Sequential\n\n"
-
-	codestr += "from keras.models import Sequential\n"
-	codestr += "from keras.layers import Input, Dense, Dropout, Flatten, Conv2D, Conv1D, Conv3D, MaxPooling2D, GaussianNoise\n"
-
-  	codestr += "model = Sequential()\n";
-
+  	codebody += "model = Sequential()\n";
   	for (var i in this.state.codeData){
 		layertype = this.state.codeData[i].name;
-		if(i > 0){
-			codestr += "model.add(" + this.formatCode(i, this.state.codeData[i].name, this.state.codeData[i].parameters, this.state.codeData[0].parameters["input shape"]) + "))" + '\n';
+		formatted = this.formatCode(i, this.state.codeData[i].name, this.state.codeData[i].parameters, this.state.codeData[0].parameters["input shape"])
+		imports.push(formatted.header);
+
+		if (i > 0){
+			codebody += "model.add(" + formatted.body + "))" + '\n';
 		}
 	}
+
+	imports = [...new Set(imports)]; // remove duplicates
+
+  	importsstr += "import keras\n";
+	importsstr += "from keras.models import Sequential";
+
+	if (imports.length > 1) {
+		importsstr += "\nfrom keras.layers import ";
+	}
+
+	for (i = 0; i < imports.length; i++) {
+		if(i > 1){
+			importsstr += ', ';
+		}
+		importsstr += imports[i];
+	}
+
+	importsstr += "\n\n"
   	
   	var newState = Object.assign({}, this.state);
-	newState["codeStr"] = codestr;
+	newState["codeStr"] = importsstr + codebody;
 	this.setState(newState);
   }
 
   copyAnimation() {
-  	alert("Copied to Clipboard!");
+  	swal("Copied to Clipboard!");
   }
 
   render(){
     return(
     	<div>
 	      <div class="header">
-		      <h2>Sequential Model Generator for Keras</h2><img onClick={()=>window.open("https://github.com/tylerpharand/construct")} src={constructicon} alt=""/>
+		      <h2>Sequential Model Constructor for Keras</h2><img onClick={()=>window.open("https://github.com/tylerpharand/construct")} src={constructicon} alt=""/>
 	      </div>
 	      <div class="container" id="container">
 	        {this.drawItems()}
