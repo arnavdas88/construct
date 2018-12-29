@@ -158,7 +158,7 @@ function hexToRgbA(hex, alpha){
 function getGradient(color, direction){
   return({
     background: 'linear-gradient(to ' + direction + ',' + hexToRgbA(color, 0.2) + ' 0%,' + hexToRgbA(color, 0.1) + ' 100%)',
-    'border-color': color,
+    'borderColor': color,
     color: tintColor(color, 0.5)
   });
 }
@@ -621,9 +621,9 @@ class Container extends React.Component {
   	var args = "";
   	var output;
   	
-  	if(index === 1){
+  	if(index == 1){
 	  	// Since input shape needs only needs to be explicitly stated once
-  		args += "input_shape=[" + input_shape.values + ']';
+  		args += "input_shape=[" + input_shape.values + '],';
   	}
 
   	switch (type) {
